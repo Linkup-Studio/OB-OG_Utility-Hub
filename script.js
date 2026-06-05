@@ -226,6 +226,40 @@ function dlCombinedCsv() {
     link.click();
 }
 
+function eraToSortValue(yearStr) {
+    if (!yearStr || yearStr.trim() === '---' || yearStr.trim() === '') return Infinity;
+    let s = yearStr.trim();
+    // 全角→半角
+    s = s.replace(/[Ａ-Ｚａ-ｚ０-９．]/g, c => {
+        const code = c.charCodeAt(0);
+        if (code === 0xFF0E) return '.'; // 全角ピリオド
+        return String.fromCharCode(code - 0xFEE0);
+    });
+
+    // 和暦パターン: S58.3, H5.3, R6.3 など
+    const match = s.match(/^([SHRshr])(\d+)(?:\.(\d+))?/i);
+    if (match) {
+        const era = match[1].toUpperCase();
+        const num = parseInt(match[2], 10);
+        const month = match[3] ? parseInt(match[3], 10) : 0;
+        let ad = num;
+        if (era === 'S') ad += 1925;
+        if (era === 'H') ad += 1988;
+        if (era === 'R') ad += 2018;
+        return ad * 100 + month; // 例: 1983*100+3 = 198303
+    }
+
+    // 西暦パターン: 1985, 1985.3 など
+    const adMatch = s.match(/^(\d{4})(?:\.(\d+))?/);
+    if (adMatch) {
+        const y = parseInt(adMatch[1], 10);
+        const m = adMatch[2] ? parseInt(adMatch[2], 10) : 0;
+        return y * 100 + m;
+    }
+
+    return Infinity;
+}
+
 function sortByYear() {
     const tbody = document.getElementById('combined-table-body');
     const rows = Array.from(tbody.querySelectorAll('tr'));
@@ -236,18 +270,9 @@ function sortByYear() {
     }
 
     rows.sort((a, b) => {
-        const yearA = a.querySelectorAll('td')[3].innerText.trim();
-        const yearB = b.querySelectorAll('td')[3].innerText.trim();
-
-        const numA = parseInt(yearA, 10);
-        const numB = parseInt(yearB, 10);
-
-        // 数値でないもの（---や空）は末尾へ
-        if (isNaN(numA) && isNaN(numB)) return 0;
-        if (isNaN(numA)) return 1;
-        if (isNaN(numB)) return -1;
-
-        return numA - numB; // 昇順（年度の若い順）
+        const yearA = a.querySelectorAll('td')[3].innerText;
+        const yearB = b.querySelectorAll('td')[3].innerText;
+        return eraToSortValue(yearA) - eraToSortValue(yearB);
     });
 
     // No.列を振り直してDOMに反映
