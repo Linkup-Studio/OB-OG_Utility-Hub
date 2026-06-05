@@ -226,6 +226,37 @@ function dlCombinedCsv() {
     link.click();
 }
 
+function sortByYear() {
+    const tbody = document.getElementById('combined-table-body');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+
+    if (rows.length === 0) {
+        alert('先に一括照合を実行してください');
+        return;
+    }
+
+    rows.sort((a, b) => {
+        const yearA = a.querySelectorAll('td')[3].innerText.trim();
+        const yearB = b.querySelectorAll('td')[3].innerText.trim();
+
+        const numA = parseInt(yearA, 10);
+        const numB = parseInt(yearB, 10);
+
+        // 数値でないもの（---や空）は末尾へ
+        if (isNaN(numA) && isNaN(numB)) return 0;
+        if (isNaN(numA)) return 1;
+        if (isNaN(numB)) return -1;
+
+        return numA - numB; // 昇順（年度の若い順）
+    });
+
+    // No.列を振り直してDOMに反映
+    rows.forEach((row, idx) => {
+        row.querySelectorAll('td')[0].innerText = idx + 1;
+        tbody.appendChild(row);
+    });
+}
+
 
 // ==========================================
 // FEATURE 2: Roster Duplicate Logic
